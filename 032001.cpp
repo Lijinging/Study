@@ -1,15 +1,15 @@
 #include <GL/glut.h>
 #include <iostream>
+#include <vector>
 #include <windows.h>
 using namespace std;
 
 float red = 1.0, blue = 1.0, green = 1.0;
 const int Width = 800;
 const int Height = 500;
-int **point = new int*[2];
-int max = 0;
 int x_c, y_c, x_b, y_b;
 bool isBezier = false;
+vector<int*> pv;
 
 void init()
 {
@@ -20,24 +20,23 @@ void init()
 
 void destroy()
 {
-	for (int i = max - 1; i >= 0; i--)
-		delete point[i];
-	max = 0;
+	pv.clear();
 }
 
 void CatmullRom(float t, int max)
 {
 	if (max < 4)
 		return;
-	x_c = point[max - 4][0] * (-0.5*t*t*t + t*t - 0.5*t)
-		+ point[max - 3][0] * (1.5*t*t*t - 2.5*t*t + 1.0)
-		+ point[max - 2][0] * (-1.5*t*t*t + 2.0*t*t + 0.5*t)
-		+ point[max - 1][0] * (0.5*t*t*t - 0.5*t*t);
 
-	y_c = point[max - 4][1] * (-0.5*t*t*t + t*t - 0.5*t)
-		+ point[max - 3][1] * (1.5*t*t*t - 2.5*t*t + 1.0)
-		+ point[max - 2][1] * (-1.5*t*t*t + 2.0*t*t + 0.5*t)
-		+ point[max - 1][1] * (0.5*t*t*t - 0.5*t*t);
+	x_c = pv[max - 4][0] * (-0.5*t*t*t + t*t - 0.5*t)
+		+ pv[max - 3][0] * (1.5*t*t*t - 2.5*t*t + 1.0)
+		+ pv[max - 2][0] * (-1.5*t*t*t + 2.0*t*t + 0.5*t)
+		+ pv[max - 1][0] * (0.5*t*t*t - 0.5*t*t);
+
+	y_c = pv[max - 4][1] * (-0.5*t*t*t + t*t - 0.5*t)
+		+ pv[max - 3][1] * (1.5*t*t*t - 2.5*t*t + 1.0)
+		+ pv[max - 2][1] * (-1.5*t*t*t + 2.0*t*t + 0.5*t)
+		+ pv[max - 1][1] * (0.5*t*t*t - 0.5*t*t);
 }
 
 void Bezier(float t, int max)
@@ -46,23 +45,23 @@ void Bezier(float t, int max)
 		return;
 	int bx[4], by[4];
 
-	bx[0] = point[max - 3][0];
-	bx[1] = point[max - 4][0] * -1.0 / 6.0
-		+ point[max - 3][0] * 1.0
-		+ point[max - 2][0] * 1.0 / 6.0;
-	bx[2] = point[max - 3][0] * 1.0 / 6.0
-		+ point[max - 2][0] * 1.0
-		+ point[max - 1][0] * -1.0 / 6.0;
-	bx[3] = point[max - 2][0];
+	bx[0] = pv[max - 3][0];
+	bx[1] = pv[max - 4][0] * -1.0 / 6.0
+		+ pv[max - 3][0] * 1.0
+		+ pv[max - 2][0] * 1.0 / 6.0;
+	bx[2] = pv[max - 3][0] * 1.0 / 6.0
+		+ pv[max - 2][0] * 1.0
+		+ pv[max - 1][0] * -1.0 / 6.0;
+	bx[3] = pv[max - 2][0];
 
-	by[0] = point[max - 3][1];
-	by[1] = point[max - 4][1] * -1.0 / 6.0
-		+ point[max - 3][1] * 1.0
-		+ point[max - 2][1] * 1.0 / 6.0;
-	by[2] = point[max - 3][1] * 1.0 / 6.0
-		+ point[max - 2][1] * 1.0
-		+ point[max - 1][1] * -1.0 / 6.0;
-	by[3] = point[max - 2][1];
+	by[0] = pv[max - 3][1];
+	by[1] = pv[max - 4][1] * -1.0 / 6.0
+		+ pv[max - 3][1] * 1.0
+		+ pv[max - 2][1] * 1.0 / 6.0;
+	by[2] = pv[max - 3][1] * 1.0 / 6.0
+		+ pv[max - 2][1] * 1.0
+		+ pv[max - 1][1] * -1.0 / 6.0;
+	by[3] = pv[max - 2][1];
 
 	x_b = bx[0] * (1 - t)*(1 - t)*(1 - t)
 		+ bx[1] * t*(1 - t)*(1 - t) * 3
@@ -83,7 +82,7 @@ void lineSegment(void)
 
 	glPointSize(6);
 
-	if (max >= 4)
+	if (pv.size() >= 4)
 	{
 		
 		glLineWidth(3);
@@ -93,7 +92,7 @@ void lineSegment(void)
 			glColor3f(1.0, 1.0, 0.0);
 			for (float t = 0; t <= 1.0; t += d)
 			{
-				for (int i = 4; i <= max; i++)
+				for (int i = 4; i <= pv.size(); i++)
 				{
 					glBegin(GL_LINES);
 					{
@@ -113,7 +112,7 @@ void lineSegment(void)
 			glColor3f(0.0, 0.5, 1.0);
 			for (float t = 0; t <= 1.0; t += d)
 			{
-				for (int i = 4; i <= max; i++)
+				for (int i = 4; i <= pv.size(); i++)
 				{
 					glBegin(GL_LINES);
 					{
@@ -133,12 +132,12 @@ void lineSegment(void)
 	glColor3f(1.0, 1.0, 1.0);
 	glBegin(GL_POINTS);
 	{
-		for (int i = 0; i < max; i++)
+		for (int i = 0; i < pv.size(); i++)
 		{
-			if (point[i][0] != 0 && point[i][1] != 0)
+			if (pv[i][0] != 0 && pv[i][1] != 0)
 			{
-				glVertex2i(point[i][0], point[i][1]);
-				//max++;
+				glVertex2i(pv[i][0], pv[i][1]);
+				//pv.size()++;
 			}
 			else
 				break;
@@ -147,15 +146,15 @@ void lineSegment(void)
 	glEnd();
 	glColor3f(0.0, 0.8, 0.0);
 	glLineWidth(1);
-	if (max > 1)
+	if (pv.size() > 1)
 	{
 
-		for (int i = 0; i < max - 1; i++)
+		for (int i = 0; i < pv.size() - 1; i++)
 		{
 			glBegin(GL_LINES);
 			{
-				glVertex2i(point[i][0], point[i][1]);
-				glVertex2i(point[i + 1][0], point[i + 1][1]);
+				glVertex2i(pv[i][0], pv[i][1]);
+				glVertex2i(pv[i + 1][0], pv[i + 1][1]);
 			}
 			glEnd();
 		}
@@ -185,30 +184,33 @@ void processMouse(int button, int state, int x, int y)
 {
 	if (state == GLUT_DOWN)
 	{
-		cout << "(x,y)=(" << x << "," << y << ")" << endl;
-		// 		if (max == 8)
-		// 		{
-		// 			for (int i = 0; i < max; i++)
-		// 			{
-		// 				point[i][0] = point[i + 1][0];
-		// 				point[i][1] = point[i + 1][1];
-		// 			}
-		// 			point[max-1][0] = x;
-		// 			point[max-1][1] = Height-y;
-		// 		}
-		// 		else
 		{
-			point[max] = new int[2];
-			point[max][0] = x;
-			point[max][1] = Height - y;
-			max++;
+			pv.push_back(new int[2]{x, Height - y});
+			cout << "pv.size=" << pv.size() << endl;
+			cout << "pv:" << pv[pv.size()-1][0] << "," << pv[pv.size()-1][1] << endl;
 		}
 	}
+}
+
+void changeSize(int w, int h)
+{
+	gluOrtho2D(0.0, w, 0.0, h);
 }
 
 int main(int argc, char** argv)
 {
 	glutInit(&argc, argv);
+	glShadeModel(GL_SMOOTH);
+
+
+// 	glEnable(GL_BLEND);
+// 	glEnable(GL_LINE_SMOOTH);
+// 	glEnable(GL_POLYGON_SMOOTH);
+// 	glEnable(GL_POINT_SMOOTH);
+// 	glTranslatef(3.0f, 0.0f, 0.0f);
+
+
+
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
 	glutInitWindowPosition(50, 100);
 	glutInitWindowSize(Width, Height);
@@ -217,6 +219,8 @@ int main(int argc, char** argv)
 	init();
 	glutDisplayFunc(lineSegment);
 	glutIdleFunc(lineSegment);
+
+//	glutReshapeFunc(changeSize);
 
 	//处理鼠标事件
 	glutMouseFunc(processMouse);
